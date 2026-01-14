@@ -1,0 +1,240 @@
+/* Themes */
+/* Light (Default) */
+:root[data-theme='light'] {
+    --color-bg-app: #f3f4f6;
+    --color-bg-surface: #ffffff;
+    --color-bg-sidebar: #1e293b;
+    --color-bg-sidebar-hover: #334155;
+    --color-text-main: #111827;
+    --color-text-secondary: #6b7280;
+    --color-text-inverse: #ffffff;
+    --color-text-sidebar: #e2e8f0;
+    --color-text-sidebar-muted: #94a3b8;
+    --color-border: #e5e7eb;
+    --color-primary: #3b82f6;
+    --color-primary-hover: #2563eb;
+    --color-bg-column: #f8fafc;
+    /* Tags */
+    --color-tag-high-bg: #fef2f2;
+    --color-tag-high-text: #ef4444;
+    --color-tag-medium-bg: #fffbeb;
+    --color-tag-medium-text: #f59e0b;
+    --color-tag-low-bg: #f0fdf4;
+    --color-tag-low-text: #22c55e;
+    /* Quotes */
+    --color-bg-quote: #fafafa;
+    --color-border-quote: #8b5cf6;
+    /* Badges */
+    --color-bg-badge: #e2e8f0;
+    --color-text-badge: #64748b;
+}
+
+/* Dark */
+:root[data-theme='dark'] {
+    --color-bg-app: #111827;
+    --color-bg-surface: #1f2937;
+    --color-bg-sidebar: #0f172a;
+    --color-bg-sidebar-hover: #1e293b;
+    --color-text-main: #f9fafb;
+    --color-text-secondary: #9ca3af;
+    --color-text-inverse: #111827;
+    --color-text-sidebar: #f1f5f9;
+    --color-text-sidebar-muted: #cbd5e1;
+    --color-border: #374151;
+    --color-primary: #60a5fa;
+    --color-primary-hover: #3b82f6;
+    --color-bg-column: #1e293b;
+    /* Tags */
+    --color-tag-high-bg: rgba(239, 68, 68, 0.2);
+    --color-tag-high-text: #fca5a5;
+    --color-tag-medium-bg: rgba(245, 158, 11, 0.2);
+    --color-tag-medium-text: #fcd34d;
+    --color-tag-low-bg: rgba(34, 197, 94, 0.2);
+    --color-tag-low-text: #86efac;
+    /* Quotes */
+    --color-bg-quote: #1e293b;
+    --color-border-quote: #a78bfa;
+    /* Badges */
+    --color-bg-badge: #334155;
+    --color-text-badge: #cbd5e1;
+}
+
+/* High Contrast Light */
+:root[data-theme='high-contrast-light'] {
+    --color-bg-app: #ffffff;
+    --color-bg-surface: #ffffff;
+    --color-bg-sidebar: #000000;
+    --color-bg-sidebar-hover: #333333;
+    --color-text-main: #000000;
+    --color-text-secondary: #1a1a1a;
+    --color-text-inverse: #ffffff;
+    --color-text-sidebar: #ffffff;
+    --color-text-sidebar-muted: #dddddd;
+    --color-border: #000000;
+    --color-primary: #0000ff;
+    --color-primary-hover: #0000cc;
+    --color-bg-column: #f5f5f5;
+    /* Tags */
+    --color-tag-high-bg: #ffffff;
+    --color-tag-high-text: #000000;
+    --color-tag-medium-bg: #ffffff;
+    --color-tag-medium-text: #000000;
+    --color-tag-low-bg: #ffffff;
+    --color-tag-low-text: #000000;
+    /* Quotes */
+    --color-bg-quote: #ffffff;
+    --color-border-quote: #000000;
+    /* Badges */
+    --color-bg-badge: #ffffff;
+    --color-text-badge: #000000;
+}
+
+/* High Contrast Dark */
+:root[data-theme='high-contrast-dark'] {
+    --color-bg-app: #000000;
+    --color-bg-surface: #000000;
+    --color-bg-sidebar: #ffffff;
+    --color-bg-sidebar-hover: #cccccc;
+    --color-text-main: #ffffff;
+    --color-text-secondary: #eeeeee;
+    --color-text-inverse: #000000;
+    --color-text-sidebar: #000000;
+    --color-text-sidebar-muted: #333333;
+    --color-border: #ffffff;
+    --color-primary: #ffff00;
+    --color-primary-hover: #cccc00;
+    --color-bg-column: #1a1a1a;
+    /* Tags */
+    --color-tag-high-bg: #000000;
+    --color-tag-high-text: #ffffff;
+    --color-tag-medium-bg: #000000;
+    --color-tag-medium-text: #ffffff;
+    --color-tag-low-bg: #000000;
+    --color-tag-low-text: #ffffff;
+    /* Quotes */
+    --color-bg-quote: #000000;
+    --color-border-quote: #ffffff;
+    /* Badges */
+    --color-bg-badge: #000000;
+    --color-text-badge: #ffffff;
+}
+
+/* Neon Light */
+:root[data-theme='neon-light'] {
+    --color-bg-app: #fdf2f8;
+    --color-bg-surface: #ffffff;
+    --color-bg-sidebar: #831843;
+    --color-bg-sidebar-hover: #9d174d;
+    --color-text-main: #181c25;
+    --color-text-secondary: #4b5563;
+    --color-text-inverse: #ffffff;
+    --color-text-sidebar: #fce7f3;
+    --color-text-sidebar-muted: #fbcfe8;
+    --color-border: #f9a8d4;
+    --color-primary: #ec4899;
+    --color-primary-hover: #db2777;
+    --color-bg-column: #fdf4f9;
+    /* Tags */
+    --color-tag-high-bg: #fdf2f8;
+    --color-tag-high-text: #db2777;
+    --color-tag-medium-bg: #fdf2f8;
+    --color-tag-medium-text: #db2777;
+    --color-tag-low-bg: #fdf2f8;
+    --color-tag-low-text: #db2777;
+    /* Quotes */
+    --color-bg-quote: #fff1f2;
+    --color-border-quote: #be185d;
+    /* Badges */
+    --color-bg-badge: #fce7f3;
+    --color-text-badge: #be185d;
+}
+
+/* Neon Dark */
+:root[data-theme='neon-dark'] {
+    --color-bg-app: #2a0a18;
+    --color-bg-surface: #1e0511;
+    --color-bg-sidebar: #500724;
+    --color-bg-sidebar-hover: #831843;
+    --color-text-main: #fbcfe8;
+    --color-text-secondary: #f9a8d4;
+    --color-text-inverse: #2a0a18;
+    --color-text-sidebar: #fce7f3;
+    --color-text-sidebar-muted: #fbcfe8;
+    --color-border: #db2777;
+    --color-primary: #f472b6;
+    --color-primary-hover: #ec4899;
+    --color-bg-column: #500724;
+    /* Tags */
+    --color-tag-high-bg: #831843;
+    --color-tag-high-text: #fbcfe8;
+    --color-tag-medium-bg: #831843;
+    --color-tag-medium-text: #fbcfe8;
+    --color-tag-low-bg: #831843;
+    --color-tag-low-text: #fbcfe8;
+    /* Quotes */
+    --color-bg-quote: #500724;
+    --color-border-quote: #f472b6;
+    /* Badges */
+    --color-bg-badge: #831843;
+    --color-text-badge: #fce7f3;
+}
+
+
+/* Fonts */
+:root[data-font='Inter'] {
+    --font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+:root[data-font='Roboto'] {
+    --font-family: 'Roboto', sans-serif;
+}
+
+:root[data-font='Open Sans'] {
+    --font-family: 'Open Sans', sans-serif;
+}
+
+:root[data-font='Merriweather'] {
+    --font-family: 'Merriweather', serif;
+}
+
+:root[data-font='Space Mono'] {
+    --font-family: 'Space Mono', monospace;
+}
+
+/* Text Sizes */
+:root[data-text-size='sm'] {
+    --text-xs: 0.625rem;
+    --text-sm: 0.75rem;
+    --text-base: 0.875rem;
+    --text-lg: 1rem;
+    --text-xl: 1.125rem;
+    --text-2xl: 1.25rem;
+}
+
+:root[data-text-size='base'] {
+    /* Default values already in variables.css, but explicit here for completeness if overrides needed */
+    --text-xs: 0.75rem;
+    --text-sm: 0.875rem;
+    --text-base: 1rem;
+    --text-lg: 1.125rem;
+    --text-xl: 1.25rem;
+    --text-2xl: 1.5rem;
+}
+
+:root[data-text-size='lg'] {
+    --text-xs: 0.875rem;
+    --text-sm: 1rem;
+    --text-base: 1.125rem;
+    --text-lg: 1.25rem;
+    --text-xl: 1.5rem;
+    --text-2xl: 1.875rem;
+}
+
+:root[data-text-size='xl'] {
+    --text-xs: 1rem;
+    --text-sm: 1.125rem;
+    --text-base: 1.25rem;
+    --text-lg: 1.5rem;
+    --text-xl: 1.875rem;
+    --text-2xl: 2.25rem;
+}

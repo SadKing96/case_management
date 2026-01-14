@@ -1,0 +1,21 @@
+{
+  "name": "case-management-monorepo",
+  "version": "0.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "start:all": "concurrently \"npm run db:up\" \"npm run dev:apps\"",
+    "db:up": "docker-compose -f infra/docker-compose.yml up -d",
+    "db:down": "docker-compose -f infra/docker-compose.yml down",
+    "dev:apps": "concurrently \"npm run dev -w backend\" \"npm run dev -w frontend\"",
+    "dev": "npm run dev --workspaces --if-present",
+    "build": "npm run build --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}

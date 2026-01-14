@@ -1,0 +1,265 @@
+generator client {
+  provider = "prisma-client-js"
+  binaryTargets = ["native", "windows"]
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Role enum removed
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String
+  roles     String   // "Admin,User"
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  assignedCases Case[]
+  boards        BoardMember[]
+  teams         TeamMember[]
+  
+  managerId     String?
+  manager       User?    @relation("UserToManager", fields: [managerId], references: [id])
+  directReports User[]   @relation("UserToManager")
+
+  param         String? // Extra field for Entra OID if needed, or mapped to id
+}
+
+model Workspace {
+  id        String   @id @default(uuid())
+  name      String
+  domain    String
+  boards    Board[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Board {
+  id          String    @id @default(uuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+  name        String
+  slug        String    @unique
+  description String?
+  ingressRules IngressRule[]
+  color       String    @default("#3b82f6") // Blue default
+  columns     Column[]
+  cases       Case[]
+  rules       Rule[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  members     BoardMember[]
+  teams       BoardTeam[]
+
+  @@index([workspaceId])
+}
+
+model BoardMember {
+  id        String   @id @default(uuid())
+  boardId   String
+  board     Board    @relation(fields: [boardId], references: [id])
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  role      String?  // 'Admin', 'Member'
+  assignedAt DateTime @default(now())
+
+  @@unique([boardId, userId])
+  @@index([boardId])
+  @@index([userId])
+}
+
+model Column {
+  id        String   @id @default(uuid())
+  boardId   String
+  board     Board    @relation(fields: [boardId], references: [id])
+  name      String
+  position  Int
+  isFinal   Boolean  @default(false)
+  color     String?  // Hex color
+  cases     Case[]
+  ingressRules IngressRule[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([boardId])
+}
+
+// CaseType enum removed
+
+model Case {
+  id              String    @id @default(uuid())
+  boardId         String
+  board           Board     @relation(fields: [boardId], references: [id])
+  columnId        String
+  column          Column    @relation(fields: [columnId], references: [id])
+  position        Int
+
+  title           String
+  description     String?
+  priority        String?   // High, Medium, Low
+  caseType        String    @default("ORDER") // formerly CaseType enum
+  
+  // Quote specific fields
+  quoteId         String?   // Random Alphanumeric for Quotes
+  productType     String?
+  specs           String?
+  customerName    String?
+  poNumber        String?
+  
+  emailSlug       String?   @unique // Random string for inbound email routing
+  
+  formPayloadJson String
+  assigneeId      String?
+  assignee        User?     @relation(fields: [assigneeId], references: [id])
+  opdsl           DateTime?
+    
+  notes           CaseNote[]
+  emails          CaseEmail[]
+  attachments     CaseAttachment[]
+  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  closedAt        DateTime?
+  archivedAt      DateTime?
+  deletedAt       DateTime?
+
+  // Escalation Relations
+  escalatedToId   String?   @unique
+  escalatedTo     Case?     @relation("Escalation", fields: [escalatedToId], references: [id])
+  escalatedFrom   Case?     @relation("Escalation")
+
+  @@index([boardId])
+  @@index([columnId])
+  @@index([assigneeId])
+  @@index([archivedAt])
+  @@index([caseType])
+}
+
+model CaseNote {
+  id        String   @id @default(uuid())
+  caseId    String
+  case      Case     @relation(fields: [caseId], references: [id])
+  authorId  String   // User ID
+  content   String
+  createdAt DateTime @default(now())
+}
+
+model CaseEmail {
+  id          String   @id @default(uuid())
+  caseId      String
+  case        Case     @relation(fields: [caseId], references: [id])
+  direction   String   // in | out
+  from        String
+  to          String   // CSV
+  cc          String   // CSV
+  subject     String
+  bodyHtml    String?
+  bodyText    String?
+  messageId   String?  @unique
+  inReplyTo   String?
+  receivedAt  DateTime @default(now())
+  
+  attachments CaseEmailAttachment[]
+
+  @@index([caseId])
+  @@index([messageId])
+}
+
+model CaseAttachment {
+  id          String   @id @default(uuid())
+  caseId      String
+  case        Case     @relation(fields: [caseId], references: [id])
+  fileName    String
+  mimeType    String
+  sizeBytes   Int
+  blobPath    String
+  uploadedAt  DateTime @default(now())
+  uploadedBy  String?
+}
+
+model CaseEmailAttachment {
+  id          String    @id @default(uuid())
+  emailId     String
+  email       CaseEmail @relation(fields: [emailId], references: [id])
+  fileName    String
+  mimeType    String
+  sizeBytes   Int
+  blobPath    String
+  contentId   String?
+}
+
+model Rule {
+  id            String   @id @default(uuid())
+  boardId       String
+  board         Board    @relation(fields: [boardId], references: [id])
+  name          String
+  triggerType   String
+  conditionJson String
+  actionJson    String
+  isEnabled     Boolean  @default(true)
+}
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  actorId     String
+  entityType  String
+  entityId    String
+  action      String
+  detailsJson String?
+  createdAt   DateTime @default(now())
+}
+
+model IngressRule {
+  id             String   @id @default(uuid())
+  name           String
+  keyword        String
+  targetBoardId  String
+  targetBoard    Board    @relation(fields: [targetBoardId], references: [id])
+  targetColumnId String
+  targetColumn   Column   @relation(fields: [targetColumnId], references: [id])
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Team {
+  id          String       @id @default(uuid())
+  name        String       @unique
+  description String?
+  color       String       @default("#3b82f6") // Blue default
+  isActive    Boolean      @default(true)
+  members     TeamMember[]
+  boards      BoardTeam[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+model TeamMember {
+  id     String @id @default(uuid())
+  teamId String
+  team   Team   @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, userId])
+  @@index([teamId])
+  @@index([userId])
+}
+
+model BoardTeam {
+  id      String @id @default(uuid())
+  boardId String
+  board   Board  @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  teamId  String
+  team    Team   @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  role    String? 
+
+  @@unique([boardId, teamId])
+  @@index([boardId])
+  @@index([teamId])
+}

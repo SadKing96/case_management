@@ -1,0 +1,19 @@
+
+> backend@0.0.0 build
+> tsc
+
+src/routes/ingress.ts(100,17): error TS2322: Type '{ title: string; description: string; priority: string; position: number; boardId: any; columnId: any; }' is not assignable to type '(Without<CaseCreateInput, CaseUncheckedCreateInput> & CaseUncheckedCreateInput) | (Without<...> & CaseCreateInput)'.
+  Type '{ title: string; description: string; priority: string; position: number; boardId: any; columnId: any; }' is not assignable to type 'Without<CaseUncheckedCreateInput, CaseCreateInput> & CaseCreateInput'.
+    Type '{ title: string; description: string; priority: string; position: number; boardId: any; columnId: any; }' is missing the following properties from type 'CaseCreateInput': formPayloadJson, board, column
+src/routes/ingress.ts(134,17): error TS2322: Type '{ title: string; description: string; priority: string; position: number; boardId: any; columnId: any; }' is not assignable to type '(Without<CaseCreateInput, CaseUncheckedCreateInput> & CaseUncheckedCreateInput) | (Without<...> & CaseCreateInput)'.
+  Type '{ title: string; description: string; priority: string; position: number; boardId: any; columnId: any; }' is not assignable to type 'Without<CaseUncheckedCreateInput, CaseCreateInput> & CaseCreateInput'.
+    Type '{ title: string; description: string; priority: string; position: number; boardId: any; columnId: any; }' is missing the following properties from type 'CaseCreateInput': formPayloadJson, board, column
+src/seed.ts(52,13): error TS2322: Type 'string[]' is not assignable to type 'string'.
+src/seed.ts(63,13): error TS2322: Type 'string[]' is not assignable to type 'string'.
+npm error Lifecycle script `build` failed with error:
+npm error code 2
+npm error path C:\Users\zluke\.gemini\antigravity\scratch\case-management\apps\backend
+npm error workspace backend@0.0.0
+npm error location C:\Users\zluke\.gemini\antigravity\scratch\case-management\apps\backend
+npm error command failed
+npm error command C:\Windows\system32\cmd.exe /d /s /c tsc

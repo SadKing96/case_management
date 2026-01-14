@@ -1,0 +1,118 @@
+generator client {
+  provider = "prisma-client-js"
+  binaryTargets = ["native", "windows"]
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./debug.db"
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String
+  roles     String   // "Admin,User"
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  assignedCases Case[]
+  boards        BoardMember[]
+  
+  managerId     String?
+  manager       User?    @relation("UserToManager", fields: [managerId], references: [id])
+  directReports User[]   @relation("UserToManager")
+
+  param         String? 
+}
+
+model Workspace {
+  id        String   @id @default(uuid())
+  name      String
+  domain    String
+  boards    Board[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Board {
+  id          String    @id @default(uuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+  name        String
+  slug        String    @unique
+  description String?
+  color       String    @default("#3b82f6") 
+  columns     Column[]
+  cases       Case[] 
+  // rules       Rule[] 
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  members     BoardMember[]
+
+  @@index([workspaceId])
+}
+
+model BoardMember {
+  id        String   @id @default(uuid())
+  boardId   String
+  board     Board    @relation(fields: [boardId], references: [id])
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  role      String?  
+  assignedAt DateTime @default(now())
+
+  @@unique([boardId, userId])
+  @@index([boardId])
+  @@index([userId])
+}
+
+model Column {
+  id        String   @id @default(uuid())
+  boardId   String
+  board     Board    @relation(fields: [boardId], references: [id])
+  name      String
+  position  Int
+  isFinal   Boolean  @default(false)
+  color     String?  
+  cases     Case[] 
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([boardId])
+}
+
+model Case {
+  id              String    @id @default(uuid())
+  boardId         String
+  board           Board     @relation(fields: [boardId], references: [id])
+  columnId        String
+  column          Column    @relation(fields: [columnId], references: [id])
+  position        Int
+  title           String
+  priority        String?
+  caseType        String    @default("ORDER")
+  
+  quoteId         String?
+  productType     String?
+  specs           String?
+  customerName    String?
+  
+  formPayloadJson String
+  assigneeId      String?
+  assignee        User?     @relation(fields: [assigneeId], references: [id])
+  opdsl           DateTime?
+    
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  closedAt        DateTime?
+  archivedAt      DateTime?
+
+  @@index([boardId])
+  @@index([columnId])
+  @@index([assigneeId])
+  @@index([archivedAt])
+  @@index([caseType])
+}
