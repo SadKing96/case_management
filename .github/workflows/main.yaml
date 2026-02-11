@@ -27,4 +27,4 @@ jobs:
           context: .
           file: apps/frontend/Dockerfile
           push: true
-          tags: ghcr.io/${{ github.repository_owner }}/garticaintel:latest
+          tags: ghcr.io/SadKing96/case_management:latest
