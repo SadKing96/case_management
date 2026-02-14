@@ -7,6 +7,9 @@ import { AppError } from './utils/AppError';
 
 const app = express();
 
+// Trust proxy for rate limiting behind load balancers
+app.set('trust proxy', 1);
+
 // Middleware
 app.use(helmet());
 app.use(cors());

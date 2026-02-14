@@ -35,7 +35,16 @@ export const requireAuth = (req: Request, res: Response, next: NextFunction) => 
     }
 
     const token = authHeader.split(' ')[1];
-    const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-key';
+    let JWT_SECRET = process.env.JWT_SECRET;
+
+    if (!JWT_SECRET) {
+        if (process.env.NODE_ENV === 'production') {
+            throw new Error('FATAL: JWT_SECRET is not defined in production environment.');
+        } else {
+            console.warn('SECURITY WARNING: Using default "dev-secret-key" for JWT_SECRET.');
+            JWT_SECRET = 'dev-secret-key';
+        }
+    }
 
     // Try Local JWT first
     try {
@@ -46,7 +55,7 @@ export const requireAuth = (req: Request, res: Response, next: NextFunction) => 
         // Not a local token, try Azure AD if configured, or just mock headers
     }
 
-    if (token === 'mock-token') {
+    if (process.env.NODE_ENV !== 'production' && token === 'mock-token') {
         req.user = {
             id: 'u1',
             name: 'Mock User',
@@ -57,7 +66,7 @@ export const requireAuth = (req: Request, res: Response, next: NextFunction) => 
         return next();
     }
 
-    if (token === 'mock-client-token') {
+    if (process.env.NODE_ENV !== 'production' && token === 'mock-client-token') {
         req.user = {
             id: 'client-123',
             name: 'Acme Corp',
