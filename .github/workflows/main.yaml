@@ -29,6 +29,6 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./Dockerfile
+          file: ./apps/frontend/Dockerfile
           push: true
           tags: ghcr.io/sadking96/case_management:latest
