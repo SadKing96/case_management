@@ -1,4 +1,4 @@
-# Board - Case Management System
+ # Board - Case Management System
 
 A modern, Kanban-style case management application for internal team workflows. Built as a monorepo with a React frontend and Node.js/Express backend.
 
