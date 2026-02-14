@@ -35,6 +35,16 @@ export const requireAuth = (req: Request, res: Response, next: NextFunction) => 
     }
 
     const token = authHeader.split(' ')[1];
+    const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-key';
+
+    // Try Local JWT first
+    try {
+        const decoded = jwt.verify(token, JWT_SECRET);
+        req.user = decoded;
+        return next();
+    } catch (err) {
+        // Not a local token, try Azure AD if configured, or just mock headers
+    }
 
     if (token === 'mock-token') {
         req.user = {
@@ -47,6 +57,18 @@ export const requireAuth = (req: Request, res: Response, next: NextFunction) => 
         return next();
     }
 
+    if (token === 'mock-client-token') {
+        req.user = {
+            id: 'client-123',
+            name: 'Acme Corp',
+            email: 'buyer@acme.com',
+            roles: ['Client'],
+            workspaceId: 'default-workspace'
+        };
+        return next();
+    }
+
+    // Azure AD Fallback
     jwt.verify(token, getKey, {
         audience: clientId, // or api://...
         issuer: issuer,

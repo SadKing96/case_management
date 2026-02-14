@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { User, Role } from '../../../../packages/shared/src/types';
 
 // Extend User to include role if not already properly typed from shared
@@ -7,9 +7,12 @@ import { User, Role } from '../../../../packages/shared/src/types';
 interface AuthContextType {
     user: User | null;
     currentRole: Role | null;
-    login: (role: Role) => void;
+    login: (role: Role, specificUser?: User) => void;
     logout: () => void;
     isAuthenticated: boolean;
+    impersonateClient: () => void;
+    exitImpersonation: () => void;
+    isImpersonating: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -31,11 +34,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return stored ? (JSON.parse(stored) as Role) : null;
     });
 
-    const login = (role: Role) => {
+    const [realUser, setRealUser] = useState<User | null>(() => {
+        const stored = localStorage.getItem('auth_real_user');
+        return stored ? JSON.parse(stored) : null;
+    });
+    const [realRole, setRealRole] = useState<Role | null>(() => {
+        const stored = localStorage.getItem('auth_real_role');
+        return stored ? (JSON.parse(stored) as Role) : null;
+    });
+
+    useEffect(() => {
+        console.log('AuthProvider Debug: State Changed', { user, currentRole });
+    }, [user, currentRole]);
+
+    useEffect(() => {
+        console.log('AuthProvider Debug: MOUNTED');
+        return () => console.log('AuthProvider Debug: UNMOUNTED');
+    }, []);
+
+    const login = (role: Role, specificUser?: User) => {
         // Mock login - sets a user with the requested role
-        const newUser: User = {
+        const newUser: User = specificUser || {
             ...MOCK_USER,
-            roles: [role] // For simplicity in this mock, assign single role
+            roles: [role]
         };
         setUser(newUser);
         setCurrentRole(role);
@@ -46,8 +67,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const logout = () => {
         setUser(null);
         setCurrentRole(null);
+        setRealUser(null);
+        setRealRole(null);
         localStorage.removeItem('auth_user');
         localStorage.removeItem('auth_role');
+        localStorage.removeItem('auth_real_user');
+        localStorage.removeItem('auth_real_role');
+    };
+
+    const impersonateClient = () => {
+        if (!user || currentRole === 'Client') return;
+
+        // Save state
+        setRealUser(user);
+        setRealRole(currentRole);
+        localStorage.setItem('auth_real_user', JSON.stringify(user));
+        localStorage.setItem('auth_real_role', JSON.stringify(currentRole));
+
+        // Switch to Client
+        const clientUser: User = {
+            id: 'mock-client-id',
+            name: 'Mock Customer (Acme)',
+            email: 'customer@acme.com',
+            roles: ['Client'],
+            avatarUrl: 'https://ui-avatars.com/api/?name=Acme+Corp&background=0D8ABC&color=fff'
+        };
+        login('Client', clientUser);
+    };
+
+    const exitImpersonation = () => {
+        if (!realUser || !realRole) return;
+
+        setUser(realUser);
+        setCurrentRole(realRole);
+        localStorage.setItem('auth_user', JSON.stringify(realUser));
+        localStorage.setItem('auth_role', JSON.stringify(realRole));
+
+        // Clear backup
+        setRealUser(null);
+        setRealRole(null);
+        localStorage.removeItem('auth_real_user');
+        localStorage.removeItem('auth_real_role');
     };
 
     return (
@@ -56,7 +116,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             currentRole,
             login,
             logout,
-            isAuthenticated: !!user
+            isAuthenticated: !!user,
+            impersonateClient,
+            exitImpersonation,
+            isImpersonating: !!realUser
         }}>
             {children}
         </AuthContext.Provider>

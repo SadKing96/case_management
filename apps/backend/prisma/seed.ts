@@ -28,7 +28,52 @@ async function main() {
         }
     });
 
+    import { hashPassword } from '../src/utils/auth';
+
+    // ... existing workspace/board creation ...
+
     // 3. Create Users
+    const defaultPwd = await hashPassword('password');
+    const testPwd = await hashPassword('test');
+    const adminPwd = await hashPassword('admin');
+    const superPwd = await hashPassword('superuser');
+
+    // SuperUser
+    await prisma.user.upsert({
+        where: { email: 'superuser@superuser' },
+        update: { password: superPwd, roles: 'SuperUser' },
+        create: {
+            name: 'superuser',
+            email: 'superuser@superuser',
+            roles: 'SuperUser',
+            password: superPwd
+        }
+    });
+
+    // Admin
+    await prisma.user.upsert({
+        where: { email: 'admin@admin' },
+        update: { password: adminPwd, roles: 'Admin' },
+        create: {
+            name: 'admin',
+            email: 'admin@admin',
+            roles: 'Admin',
+            password: adminPwd
+        }
+    });
+
+    // Test User
+    await prisma.user.upsert({
+        where: { email: 'test@test' },
+        update: { password: testPwd, roles: 'User' },
+        create: {
+            name: 'test',
+            email: 'test@test',
+            roles: 'User',
+            password: testPwd
+        }
+    });
+
     const user1 = await prisma.user.upsert({
         where: { email: 'walter@example.com' },
         update: {},
@@ -36,9 +81,11 @@ async function main() {
             id: 'u1',
             email: 'walter@example.com',
             name: 'Walter White',
-            roles: 'Admin'
+            roles: 'Admin',
+            password: defaultPwd
         }
     });
+    // ... existing user2 logic ...
 
     const user2 = await prisma.user.upsert({
         where: { email: 'jesse@example.com' },

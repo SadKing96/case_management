@@ -271,7 +271,10 @@ export function KanbanBoard() {
 
             // Prevent dragging QUOTE cards (except maybe within same column?)
             // Requirement: "Quote cards can never leave the first column"
-            if (card?.type === 'QUOTE' && sourceColumnId !== targetColumnId) {
+            // Also checking title as fallback for data inconsistency
+            const isQuote = card?.type === 'QUOTE' || card?.title?.startsWith('Quote');
+
+            if (isQuote && sourceColumnId !== targetColumnId) {
                 alert('Quote cards cannot be moved manually. Use Win/Lose actions.');
                 return;
             }

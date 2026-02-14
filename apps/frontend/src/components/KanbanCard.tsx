@@ -41,8 +41,8 @@ export function KanbanCard({
         <div
             className={`kanban-card ${isQuote ? 'quote-card' : ''}`}
             onClick={onClick}
-            draggable={!!onDragStart && !isQuote}
-            onDragStart={!isQuote ? onDragStart : undefined}
+            draggable={!!onDragStart}
+            onDragStart={onDragStart}
             style={escalatedToId ? { borderLeft: '4px solid var(--color-danger)' } : undefined}
         >
             <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>

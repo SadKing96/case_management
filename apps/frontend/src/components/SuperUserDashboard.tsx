@@ -1,6 +1,4 @@
-import React from 'react';
 import { Link } from 'react-router-dom';
-import '../styles/variables.css';
 
 export function SuperUserDashboard() {
     return (
@@ -20,6 +18,10 @@ export function SuperUserDashboard() {
                 }}>
                     Central administration for users, teams, and workspace settings.
                 </p>
+            </div>
+
+            <div style={{ marginBottom: '3rem' }}>
+                {/* UsersList moved to /superuser/users to clean up dashboard */}
             </div>
 
             <div style={{

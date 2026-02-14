@@ -1,0 +1,24 @@
+/* Dashboard Styles */
+
+.dashboard-container {
+    height: 100%;
+    overflow-y: auto;
+    padding: var(--space-6);
+    background-color: var(--color-bg-app);
+}
+
+.stat-card {
+    background-color: var(--color-bg-surface);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--color-border);
+    padding: var(--space-6);
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}

@@ -4,6 +4,7 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import { generateEmailSlug } from '../utils/slugs';
+import { crmService } from '../services/crm';
 
 const upload = multer({
     storage: multer.diskStorage({
@@ -23,69 +24,126 @@ const upload = multer({
 
 const router = Router();
 
+// POST /import - Import from CRM
+router.post('/import', async (req, res, next) => {
+    try {
+        const { crmSystem, crmId, boardId, columnId } = req.body;
+
+        // Fetch from CRM Service
+        const record = await crmService.fetchRecord(crmId, crmSystem);
+
+        // Resolve Board (if handled by ID or Slug) - Reuse logic or keep simple
+        // For import, we assume boardId is passed correctly from frontend (which has the board contest)
+
+        const nextPosition = 10000; // Simplified
+
+        const newCase = await prisma.case.create({
+            data: {
+                title: record.title,
+                description: record.description,
+                caseType: record.entityType.toUpperCase(),
+                customerName: record.customerName,
+                crmSystem: record.system,
+                crmId: record.id,
+                crmData: JSON.stringify(record.data),
+
+                boardId,
+                columnId,
+                position: nextPosition,
+                formPayloadJson: JSON.stringify({ imported: true, value: record.value }),
+                priority: 'Medium',
+                emailSlug: generateEmailSlug(),
+            }
+        });
+
+        res.status(201).json(newCase);
+    } catch (error) {
+        next(error);
+    }
+});
+
 // GET /cases
 router.get('/', async (req, res, next) => {
     try {
-        const { active = 'true' } = req.query;
+        const { active = 'true', boardId, page, limit } = req.query;
         const isActive = active === 'true';
 
         const where: any = {};
         if (isActive) {
             where.closedAt = null;
-            // where.archivedAt = null; // Removed this constraint from "active" generally, or better:
-            // "Active" usually means "Working on it". 
-            // The existing code was: closedAt = null AND archivedAt = null.
-            // We should ALSO exclude deleted items.
             where.archivedAt = null;
         }
-
-        // ALWAYS exclude deleted items from the main lists unless specified (e.g. for superuser debug, but let's default to hiding)
         where.deletedAt = null;
 
-        const cases = await prisma.case.findMany({
-            where,
-            include: {
-                board: {
-                    select: {
-                        id: true,
-                        name: true,
-                        slug: true,
-                        color: true
-                    }
-                },
-                column: {
-                    select: {
-                        id: true,
-                        name: true,
-                        color: true
-                    }
-                },
-                assignee: {
-                    select: {
-                        id: true,
-                        name: true,
-                        email: true,
-                        teams: {
-                            select: {
-                                team: {
-                                    select: {
-                                        id: true,
-                                        name: true,
-                                        color: true
+        // Security: Filter for Clients
+        if (req.user?.roles?.includes('Client')) {
+            where.creatorId = req.user.id;
+        } else if (boardId) {
+            where.boardId = boardId;
+        }
+
+        const pageNum = page ? parseInt(page as string) : undefined;
+        const limitNum = limit ? parseInt(limit as string) : undefined;
+
+        // Pagination props
+        const take = limitNum;
+        const skip = (pageNum && limitNum) ? (pageNum - 1) * limitNum : undefined;
+
+        const [cases, total] = await Promise.all([
+            prisma.case.findMany({
+                where,
+                include: {
+                    board: {
+                        select: {
+                            id: true,
+                            name: true,
+                            slug: true,
+                            color: true
+                        }
+                    },
+                    column: {
+                        select: {
+                            id: true,
+                            name: true,
+                            color: true
+                        }
+                    },
+                    assignee: {
+                        select: {
+                            id: true,
+                            name: true,
+                            email: true,
+                            teams: {
+                                select: {
+                                    team: {
+                                        select: {
+                                            id: true,
+                                            name: true,
+                                            color: true
+                                        }
                                     }
                                 }
                             }
                         }
+                    },
+                    escalatedTo: {
+                        include: { column: true }
                     }
                 },
-                escalatedTo: {
-                    include: { column: true }
-                }
-            },
-            orderBy: {
-                updatedAt: 'desc'
-            }
-        });
+                orderBy: {
+                    updatedAt: 'desc'
+                },
+                take,
+                skip
+            }),
+            prisma.case.count({ where })
+        ]);
+
+        // Return pagination headers
+        res.setHeader('X-Total-Count', total);
+        if (pageNum) res.setHeader('X-Page', pageNum);
+        if (limitNum) res.setHeader('X-Limit', limitNum);
+
         res.json(cases);
     } catch (error) {
         next(error);
@@ -136,6 +194,10 @@ router.get('/:caseId', async (req, res, next) => {
         if (!kase) {
             return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Case not found' } });
         }
+        // Security check for Client
+        if (req.user?.roles?.includes('Client') && kase.creatorId !== req.user.id) {
+            return res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Not authorized' } });
+        }
         res.json(kase);
     } catch (error) {
         next(error);
@@ -147,7 +209,18 @@ router.post('/', async (req, res, next) => {
     try {
         const { title, priority, assigneeId, opdsl, boardId } = req.body;
 
-        if (!boardId) {
+        let targetBoardId = boardId;
+
+        // Auto-resolve board for Client if not provided or just to be safe
+        if (req.user?.roles?.includes('Client')) {
+            if (!targetBoardId) {
+                // Find default ingress board? or just the first board in the workspace
+                const defaultBoard = await prisma.board.findFirst();
+                if (defaultBoard) targetBoardId = defaultBoard.id;
+            }
+        }
+
+        if (!targetBoardId) {
             return res.status(400).json({ error: { code: 'BAD_REQUEST', message: 'boardId is required' } });
         }
 
@@ -155,8 +228,8 @@ router.post('/', async (req, res, next) => {
         const board = await prisma.board.findFirst({
             where: {
                 OR: [
-                    { id: boardId },
-                    { slug: boardId }
+                    { id: targetBoardId },
+                    { slug: targetBoardId }
                 ]
             }
         });
@@ -185,7 +258,6 @@ router.post('/', async (req, res, next) => {
         const newPosition = lastCase ? lastCase.position + 1 : 0;
 
         // 3. Create the case
-        // 3. Create the case
         const caseData: any = {
             title,
             priority: priority || 'medium',
@@ -197,13 +269,19 @@ router.post('/', async (req, res, next) => {
             formPayloadJson: '{}', // Default empty
             caseType: req.body.type || 'ORDER',
             emailSlug: generateEmailSlug(),
+            creatorId: req.user?.id // Track creator
         };
 
         if (caseData.caseType === 'QUOTE') {
             caseData.quoteId = Math.random().toString(36).substring(2, 10).toUpperCase(); // Simple alphanumeric ID
             caseData.productType = req.body.productType;
             caseData.specs = req.body.specs;
-            caseData.customerName = req.body.customerName;
+            caseData.customerName = req.body.customerName; // Internal user might set this manually
+        }
+
+        // If Client, ensure customerName matches
+        if (req.user?.roles?.includes('Client')) {
+            caseData.customerName = req.user.name;
         }
 
         const newCase = await prisma.case.create({

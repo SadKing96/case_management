@@ -11,7 +11,7 @@
     "db:up": "docker-compose -f infra/docker-compose.yml up -d",
     "db:down": "docker-compose -f infra/docker-compose.yml down",
     "dev:apps": "concurrently \"npm run dev -w backend\" \"npm run dev -w frontend\"",
-    "dev": "npm run dev --workspaces --if-present",
+    "dev": "npm run dev:apps",
     "build": "npm run build --workspaces --if-present",
     "test": "npm run test --workspaces --if-present"
   },

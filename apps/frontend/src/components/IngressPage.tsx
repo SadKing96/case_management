@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { apiClient } from '../api/client';
 import { useAuth } from '../context/AuthContext';
+import { AiIngressSetup } from './AiIngressSetup';
 
 interface IngressRule {
     id: string;
@@ -18,7 +19,7 @@ interface Column {
 }
 
 export function IngressPage() {
-    const [activeTab, setActiveTab] = useState<'import' | 'rules'>('import');
+    const [activeTab, setActiveTab] = useState<'import' | 'rules' | 'ai-ingress'>('import');
     const [boards, setBoards] = useState<any[]>([]);
 
     // --- Import State ---
@@ -221,27 +222,47 @@ export function IngressPage() {
                     Data Import
                 </button>
                 {currentRole === 'SuperUser' && (
-                    <button
-                        onClick={() => setActiveTab('rules')}
-                        style={{
-                            padding: '1rem',
-                            background: 'none',
-                            border: 'none',
-                            borderBottom: activeTab === 'rules' ? '2px solid var(--color-primary)' : '2px solid transparent',
-                            color: activeTab === 'rules' ? 'var(--color-primary)' : 'var(--color-text-secondary)',
-                            cursor: 'pointer',
-                            fontWeight: '600',
-                            fontSize: 'var(--text-base)'
-                        }}
-                    >
-                        Email Rules
-                    </button>
+                    <>
+                        <button
+                            onClick={() => setActiveTab('rules')}
+                            style={{
+                                padding: '1rem',
+                                background: 'none',
+                                border: 'none',
+                                borderBottom: activeTab === 'rules' ? '2px solid var(--color-primary)' : '2px solid transparent',
+                                color: activeTab === 'rules' ? 'var(--color-primary)' : 'var(--color-text-secondary)',
+                                cursor: 'pointer',
+                                fontWeight: '600',
+                                fontSize: 'var(--text-base)'
+                            }}
+                        >
+                            Email Rules (Legacy)
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('ai-ingress')}
+                            style={{
+                                padding: '1rem',
+                                background: 'none',
+                                border: 'none',
+                                borderBottom: activeTab === 'ai-ingress' ? '2px solid var(--color-primary)' : '2px solid transparent',
+                                color: activeTab === 'ai-ingress' ? 'var(--color-primary)' : 'var(--color-text-secondary)',
+                                cursor: 'pointer',
+                                fontWeight: '600',
+                                fontSize: 'var(--text-base)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.5rem'
+                            }}
+                        >
+                            <span>✨ AI Ingress</span>
+                        </button>
+                    </>
                 )}
             </div>
 
             {/* Content Actions */}
             <div style={{ backgroundColor: 'var(--color-bg-surface)', borderRadius: 'var(--radius-lg)', padding: '2rem', border: '1px solid var(--color-border)' }}>
-                {activeTab === 'import' ? (
+                {activeTab === 'import' && (
                     <div>
                         <h2 style={{ fontSize: 'var(--text-xl)', marginBottom: '1rem', color: 'var(--color-text-main)' }}>Import from Sheet</h2>
                         <input type="file" onChange={handleFileChange} accept=".csv,.xlsx,.xls" style={{ marginBottom: '2rem' }} />
@@ -312,7 +333,9 @@ export function IngressPage() {
                             </div>
                         )}
                     </div>
-                ) : (
+                )}
+
+                {activeTab === 'rules' && (
                     <div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                             <h2 style={{ fontSize: 'var(--text-xl)', color: 'var(--color-text-main)' }}>Email Ingestion Rules</h2>
@@ -374,6 +397,10 @@ export function IngressPage() {
                             {rules.length === 0 && <div style={{ color: 'var(--color-text-secondary)', textAlign: 'center' }}>No rules found.</div>}
                         </div>
                     </div>
+                )}
+
+                {activeTab === 'ai-ingress' && (
+                    <AiIngressSetup onBack={() => setActiveTab('import')} />
                 )}
             </div>
         </div>

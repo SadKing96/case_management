@@ -5,10 +5,15 @@ import './styles/variables.css'
 import './styles/themes.css'
 import { SettingsProvider } from './context/SettingsContext'
 
+
+import { GarticaProvider } from './context/GarticaContext'
+
 ReactDOM.createRoot(document.getElementById('root')!).render(
     <React.StrictMode>
         <SettingsProvider>
-            <App />
+            <GarticaProvider>
+                <App />
+            </GarticaProvider>
         </SettingsProvider>
     </React.StrictMode>,
 )

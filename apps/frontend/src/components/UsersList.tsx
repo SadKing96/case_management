@@ -35,11 +35,13 @@ export function UsersList() {
     useEffect(() => {
         loadUsers();
         // Close menu when clicking outside
+        // Close menu when clicking outside
         const handleClickOutside = (event: MouseEvent) => {
-            if (openMenuId) {
+            const target = event.target as HTMLElement;
+            if (openMenuId && !target.closest('.user-actions-menu') && !target.closest('.menu-toggle-btn')) {
                 setOpenMenuId(null);
             }
-            if (openFilterColumn && filterRef.current && !filterRef.current.contains(event.target as Node)) {
+            if (openFilterColumn && filterRef.current && !filterRef.current.contains(target as Node)) {
                 setOpenFilterColumn(null);
             }
         };
@@ -100,11 +102,59 @@ export function UsersList() {
         if (selectedUser) {
             // Update
             const updated = await updateUser(selectedUser.id, data);
-            setUsers(users.map(u => u.id === selectedUser.id ? updated : u));
+            setUsers(prevUsers => prevUsers.map(u => u.id === selectedUser.id ? updated : u));
         } else {
             // Create
             const created = await createUser(data);
-            setUsers([...users, created]);
+            setUsers(prevUsers => [...prevUsers, created]);
+        }
+    };
+
+    const hasAccess = (user: UserWithDetails, module: string) => {
+        const roles = user.roles || [];
+        if (roles.includes('SuperUser') || roles.includes('Admin')) return true;
+
+        // Map UI keys to Role strings (PascalCase)
+        // 'golden-thread' -> 'Module:GoldenThread'
+        // 'operations' -> 'Module:Operations'
+        // 'aftermarket' -> 'Module:Aftermarket'
+
+        const toPascal = (s: string) => s.split('-').map(p => p.charAt(0).toUpperCase() + p.slice(1)).join('');
+        const roleName = `Module:${toPascal(module)}`;
+
+        // Also support generic 'Module:Gartica' for full access if needed? 
+        // Plan implies granular control. Let's stick to specific.
+        return roles.includes(roleName as any);
+    };
+
+    const toggleAccess = async (user: UserWithDetails, module: string, currentValue: boolean) => {
+        // Calculate new roles
+        let newRoles = [...(user.roles || [])] as string[];
+
+        const toPascal = (s: string) => s.split('-').map(p => p.charAt(0).toUpperCase() + p.slice(1)).join('');
+        const moduleRole = `Module:${toPascal(module)}`;
+
+        if (currentValue) {
+            // Remove role
+            newRoles = newRoles.filter(r => r !== moduleRole);
+        } else {
+            // Add role
+            if (!newRoles.includes(moduleRole)) {
+                newRoles.push(moduleRole);
+            }
+        }
+
+        // Optimistic update
+        const updatedUser = { ...user, roles: newRoles as any[] };
+        setUsers(users.map(u => u.id === user.id ? updatedUser : u));
+
+        try {
+            await updateUser(user.id, { role: newRoles.join(',') });
+        } catch (err) {
+            console.error(err);
+            // Revert on fail
+            setUsers(users.map(u => u.id === user.id ? user : u));
+            alert('Failed to update permissions');
         }
     };
 
@@ -321,17 +371,18 @@ export function UsersList() {
                 )}
             </div>
 
-            <div style={{ background: '#fff', borderRadius: '8px', border: '1px solid #e5e7eb', overflow: 'visible' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem', tableLayout: 'fixed' }}>
+            <div style={{ background: '#fff', borderRadius: '8px', border: '1px solid #e5e7eb', overflowX: 'auto' }}>
+                <table style={{ minWidth: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
                     <thead style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
                         <tr>
-                            {renderHeaderCell('Name', 'name', '20%')}
-                            {renderHeaderCell('Email', 'email', '25%')}
-                            {renderHeaderCell('Role', 'role', '15%')}
-                            {renderHeaderCell('Manager', 'manager', '20%')}
+                            {renderHeaderCell('Name', 'name', '15%')}
+                            {renderHeaderCell('Email', 'email', '20%')}
+                            {renderHeaderCell('Role', 'role', '10%')}
+                            {renderHeaderCell('Manager', 'manager', '15%')}
                             {renderHeaderCell('Status', 'status', '10%')}
+
                             {isSuperUser && (
-                                <th style={{ textAlign: 'right', padding: '12px 24px', fontWeight: 600, color: '#6b7280', width: '10%' }}>Actions</th>
+                                <th style={{ textAlign: 'right', padding: '12px 24px', fontWeight: 600, color: '#6b7280', width: '6%' }}>Actions</th>
                             )}
                         </tr>
                     </thead>
@@ -417,9 +468,12 @@ export function UsersList() {
                                                 {user.isActive ? 'Active' : 'Deactivated'}
                                             </span>
                                         </td>
+                                        {/* Permissions moved to modal */}
+
                                         {isAdmin && (
                                             <td style={{ padding: '16px 24px', textAlign: 'right', position: 'relative' }}>
                                                 <button
+                                                    className="menu-toggle-btn"
                                                     onClick={(e) => toggleMenu(e, user.id)}
                                                     style={{ border: 'none', background: 'transparent', cursor: 'pointer', padding: '4px' }}
                                                 >
@@ -428,7 +482,7 @@ export function UsersList() {
                                                     </svg>
                                                 </button>
                                                 {openMenuId === user.id && (
-                                                    <div style={{
+                                                    <div className="user-actions-menu" style={{
                                                         position: 'absolute',
                                                         right: '24px',
                                                         top: '40px',
@@ -489,6 +543,6 @@ export function UsersList() {
             <style>{`
                 .hover-bg-app:hover { background-color: #f3f4f6 !important; }
             `}</style>
-        </div>
+        </div >
     );
 }

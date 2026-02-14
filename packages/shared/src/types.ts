@@ -1,4 +1,4 @@
-export type Role = 'SuperUser' | 'Admin' | 'User';
+export type Role = 'SuperUser' | 'Admin' | 'User' | 'Leadership' | 'Manager' | 'Client' | 'Module:Boards' | 'Module:Gartica' | 'Module:Customer';
 
 export interface User {
     id: string;
@@ -42,6 +42,9 @@ export interface Case {
     productType?: string;
     specs?: string;
     customerName?: string;
+    crmSystem?: string;
+    crmId?: string;
+    crmData?: Record<string, any>;
     formPayloadJson: Record<string, any>;
     assigneeId?: string;
     opdsl?: Date;
@@ -51,6 +54,7 @@ export interface Case {
     archivedAt?: Date;
     escalatedToId?: string;
     escalatedFromId?: string;
+    timelineItemId?: string;
 }
 
 export interface CaseNote {
@@ -134,3 +138,28 @@ export interface AuditLog {
     detailsJson?: Record<string, any>;
     createdAt: Date;
 }
+
+export interface Project {
+    id: string;
+    name: string;
+    description?: string;
+    startDate?: Date;
+    endDate?: Date;
+    status: 'planning' | 'active' | 'completed' | 'on_hold';
+    items?: TimelineItem[];
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+export interface TimelineItem {
+    id: string;
+    projectId: string;
+    content: string;
+    start: Date;
+    end: Date;
+    type: 'point' | 'range' | 'background';
+    group?: string;
+    progress: number;
+    linkedCases?: Case[];
+}
+

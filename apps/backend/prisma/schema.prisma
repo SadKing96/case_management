@@ -14,12 +14,14 @@ model User {
   id        String   @id @default(uuid())
   email     String   @unique
   name      String
+  password  String   @default("default_hash") // Temporary default for migration
   roles     String   // "Admin,User"
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   
   assignedCases Case[]
+  createdCases  Case[]   @relation("CreatedCases")
   boards        BoardMember[]
   teams         TeamMember[]
   
@@ -47,6 +49,7 @@ model Board {
   slug        String    @unique
   description String?
   ingressRules IngressRule[]
+  aiIngressRules AiIngressRule[]
   color       String    @default("#3b82f6") // Blue default
   columns     Column[]
   cases       Case[]
@@ -84,6 +87,7 @@ model Column {
   color     String?  // Hex color
   cases     Case[]
   ingressRules IngressRule[]
+  aiIngressRules AiIngressRule[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -111,6 +115,12 @@ model Case {
   specs           String?
   customerName    String?
   poNumber        String?
+
+  // CRM Integration
+  crmSystem       String?   // e.g. "Salesforce", "HubSpot"
+  crmId           String?   // External ID
+  crmData         String?   // JSON snapshot of external data
+  
   
   emailSlug       String?   @unique // Random string for inbound email routing
   
@@ -123,11 +133,18 @@ model Case {
   emails          CaseEmail[]
   attachments     CaseAttachment[]
   
+  // Timeline Link
+  timelineItemId  String?
+  timelineItem    TimelineItem? @relation(fields: [timelineItemId], references: [id])
+
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
   closedAt        DateTime?
   archivedAt      DateTime?
   deletedAt       DateTime?
+
+  creatorId       String?   // User ID of the creator (e.g. Client)
+  creator         User?     @relation("CreatedCases", fields: [creatorId], references: [id])
 
   // Escalation Relations
   escalatedToId   String?   @unique
@@ -139,6 +156,7 @@ model Case {
   @@index([assigneeId])
   @@index([archivedAt])
   @@index([caseType])
+  @@index([timelineItemId])
 }
 
 model CaseNote {
@@ -227,6 +245,33 @@ model IngressRule {
   updatedAt      DateTime @updatedAt
 }
 
+model AiIngressRule {
+  id             String   @id @default(uuid())
+  name           String
+  description    String?
+  schemaJson     String   // The JSON schema for extraction
+  
+  targetBoardId  String
+  targetBoard    Board    @relation(fields: [targetBoardId], references: [id])
+  targetColumnId String
+  targetColumn   Column   @relation(fields: [targetColumnId], references: [id])
+  
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+
+
+model GarticaInsight {
+  id          String   @id @default(uuid())
+  title       String
+  type        String   // "anomaly", "sentiment", "performance"
+  severity    String   // "low", "medium", "high", "critical"
+  description String
+  metadataJson String? // For flexible data like specific emails or order IDs
+  createdAt   DateTime @default(now())
+}
+
 model Team {
   id          String       @id @default(uuid())
   name        String       @unique
@@ -251,6 +296,39 @@ model TeamMember {
   @@index([userId])
 }
 
+
+model Project {
+  id          String         @id @default(uuid())
+  name        String
+  description String?
+  startDate   DateTime?
+  endDate     DateTime?
+  status      String         @default("planning") // planning, active, completed, on_hold
+  items       TimelineItem[]
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+}
+
+model TimelineItem {
+  id          String    @id @default(uuid())
+  projectId   String
+  project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  content     String    // The text/label
+  start       DateTime
+  end         DateTime
+  type        String    @default("range") // point, range, background
+  group       String?   // For lane grouping if needed
+  progress    Int       @default(0)
+  
+  // Link to cases
+  linkedCases Case[]
+  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([projectId])
+}
+
 model BoardTeam {
   id      String @id @default(uuid())
   boardId String
@@ -262,4 +340,50 @@ model BoardTeam {
   @@unique([boardId, teamId])
   @@index([boardId])
   @@index([teamId])
+}
+
+
+model ComplianceFlag {
+  id          String   @id @default(uuid())
+  type        String   // "pii", "sentiment", "keyword"
+  severity    String   // "high", "medium", "low"
+  description String
+  status      String   @default("open") // "open", "resolved", "dismissed"
+  
+  // Relations (Loose coupling for now to allow flagging generic content)
+  caseId      String?
+  emailId     String?
+  noteId      String?
+  
+  sourceText  String?  // Snippet that triggered the flag
+  
+  createdAt   DateTime @default(now())
+  resolvedAt  DateTime?
+}
+
+model AftermarketAsset {
+  id               String   @id @default(uuid())
+  serialNumber     String   @unique
+  model            String   // e.g. "Valve-XRT-5000"
+  customerName     String
+  location         String   // e.g. "Create #3, Factory A"
+  installDate      DateTime
+  
+  status           String   // "Active", "Maintenance Required", "Offline"
+  healthScore      Int      // 0-100
+  aiPrediction     String?  // "Failure imminent in 2 weeks"
+  
+  revenuePotential Int      // Estimated opportunity value in USD
+  lastServiceDate  DateTime?
+  
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model DashboardConfig {
+  key        String   @id
+  draft      String   // JSON string
+  published  String?  // JSON string
+  updatedAt  DateTime @updatedAt
+  publishedAt DateTime?
 }

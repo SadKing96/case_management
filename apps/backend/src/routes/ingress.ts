@@ -35,6 +35,109 @@ router.post('/rules', async (req, res) => {
     }
 });
 
+// --- AI Rules ---
+
+// Get all AI rules
+router.get('/ai/rules', async (req, res) => {
+    try {
+        const rules = await prisma.aiIngressRule.findMany({
+            include: { targetBoard: true, targetColumn: true }
+        });
+        res.json(rules);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch AI rules' });
+    }
+});
+
+// Create AI rule
+router.post('/ai/rules', async (req, res) => {
+    try {
+        const { name, description, schemaJson, targetBoardId, targetColumnId } = req.body;
+        const rule = await prisma.aiIngressRule.create({
+            data: { name, description, schemaJson, targetBoardId, targetColumnId }
+        });
+        res.json(rule);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to create AI rule' });
+    }
+});
+
+// Delete AI rule
+router.delete('/ai/rules/:id', async (req, res) => {
+    try {
+        await prisma.aiIngressRule.delete({ where: { id: req.params.id } });
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to delete AI rule' });
+    }
+});
+
+// Mock AI Chat Endpoint
+router.post('/ai/chat', async (req, res) => {
+    try {
+        const { message, currentSchema } = req.body;
+        // Mock Logic: simplified keyword extraction to build schema
+        const schema = currentSchema ? JSON.parse(currentSchema) : { fields: [] };
+        let botResponse = "I didn't understand that. You can ask me to extract specific fields like 'Invoice Number' or 'Customer Name'.";
+
+        const lowerMsg = message.toLowerCase();
+
+        if (lowerMsg.includes('extract') || lowerMsg.includes('capture') || lowerMsg.includes('add')) {
+            const newField = { name: '', type: 'string', description: '' };
+
+            if (lowerMsg.includes('po number') || lowerMsg.includes('purchase order')) {
+                newField.name = 'poNumber';
+                newField.description = 'Purchase Order Number';
+                botResponse = "I've added the **PO Number** to the extraction schema.";
+            } else if (lowerMsg.includes('customer') || lowerMsg.includes('client')) {
+                newField.name = 'customerName';
+                newField.description = 'Name of the customer';
+                botResponse = "I've added **Customer Name** to the schema.";
+            } else if (lowerMsg.includes('invoice')) {
+                newField.name = 'invoiceNumber';
+                newField.description = 'Invoice identifier';
+                botResponse = "Added **Invoice Number**.";
+            } else if (lowerMsg.includes('amount') || lowerMsg.includes('total')) {
+                newField.name = 'totalAmount';
+                newField.type = 'number';
+                newField.description = 'Total monetary amount';
+                botResponse = "Got it. Tracking the **Total Amount**.";
+            } else {
+                // Fallback generic
+                const words = message.split(' ');
+                const lastWord = words[words.length - 1].replace(/[^a-zA-Z]/g, '');
+                if (lastWord.length > 2) {
+                    newField.name = lastWord.toLowerCase();
+                    newField.description = `Extracted ${lastWord}`;
+                    botResponse = `Okay, I'll try to extract **${lastWord}** from the emails.`;
+                }
+            }
+
+            if (newField.name) {
+                // Check if exists
+                if (!schema.fields.find((f: any) => f.name === newField.name)) {
+                    schema.fields.push(newField);
+                }
+            }
+        } else if (lowerMsg.includes('hello') || lowerMsg.includes('hi')) {
+            botResponse = "Hello! I can help you set up an AI extraction rule. Just tell me what logic you want to apply to incoming emails.";
+        } else if (lowerMsg.includes('clear') || lowerMsg.includes('reset')) {
+            schema.fields = [];
+            botResponse = "I've reset the schema. What should we start with?";
+        }
+
+        res.json({
+            response: botResponse,
+            updatedSchema: JSON.stringify(schema)
+        });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'AI processing failed' });
+    }
+});
+
+// --- Simple Rules ---
 // Delete a rule
 router.delete('/rules/:id', async (req, res) => {
     try {

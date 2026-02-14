@@ -1,17 +1,58 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { fetchUsers, UserWithDetails } from '../api/users';
 import '../styles/variables.css';
 
 export function Login() {
     const navigate = useNavigate();
-    const { login } = useAuth(); // Use AuthContext
+    const { login } = useAuth();
 
-    const handleLogin = (role: 'SuperUser' | 'Admin' | 'User') => {
-        login(role);
-        if (role === 'SuperUser') navigate('/superuser');
-        else if (role === 'Admin') navigate('/admin');
-        else navigate('/boards/default');
+    const [isUserListOpen, setIsUserListOpen] = useState(false);
+    const [users, setUsers] = useState<UserWithDetails[]>([]);
+    const [loadingUsers, setLoadingUsers] = useState(false);
+
+    const getRedirectPath = (role: string, user?: any) => {
+        if (role === 'SuperUser') return '/superuser';
+        if (role === 'Admin') return '/admin';
+
+        // For standard Users, check module access
+        const roles = user?.roles || [];
+        // Handle both "Module:Boards" string array and object structure if present (backend sends strings)
+        // Also check if roles is string[] or just string (legacy check)
+        const roleList = Array.isArray(roles) ? roles : [roles];
+
+        if (roleList.includes('Module:Boards')) return '/boards/default';
+        if (roleList.some((r: string) => r.startsWith('Module:'))) return '/gartica'; // Any module access goes to Gartica
+        if (roleList.includes('Module:Customer')) return '/customer/dashboard';
+
+        // Fallback / default
+        return '/gartica'; // Default to Gartica for POC instead of boards
+    };
+
+    const handleLogin = (role: 'SuperUser' | 'Admin' | 'User', specificUser?: any) => {
+        login(role, specificUser);
+        const redirectPath = getRedirectPath(role, specificUser);
+        navigate(redirectPath);
+    };
+
+    const handleOpenUserList = async () => {
+        setIsUserListOpen(true);
+        setLoadingUsers(true);
+        try {
+            const data = await fetchUsers();
+            setUsers(data);
+        } catch (error) {
+            console.error('Failed to fetch users', error);
+        } finally {
+            setLoadingUsers(false);
+        }
+    };
+
+    const handleSelectUser = (user: UserWithDetails) => {
+        // Determine primary role
+        const primaryRole = (user.roles?.find((r: string) => !r.startsWith('Module:')) || 'User') as 'SuperUser' | 'Admin' | 'User';
+        handleLogin(primaryRole, user);
     };
 
     return (
@@ -29,7 +70,8 @@ export function Login() {
                 borderRadius: 'var(--radius-lg)',
                 boxShadow: 'var(--shadow-lg)',
                 width: '100%',
-                maxWidth: '400px'
+                maxWidth: '400px',
+                position: 'relative'
             }}>
                 <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
                     <h1 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '0.5rem' }}>Welcome Back</h1>
@@ -110,10 +152,100 @@ export function Login() {
                             <button type="button" onClick={() => handleLogin('SuperUser')} className="btn btn-primary" style={{ background: '#7c3aed' }}>Login as SuperUser</button>
                             <button type="button" onClick={() => handleLogin('Admin')} className="btn btn-primary" style={{ background: '#2563eb' }}>Login as Admin</button>
                             <button type="button" onClick={() => handleLogin('User')} className="btn btn-primary">Login as User (PM)</button>
+
+                            <div style={{ height: '1px', background: 'var(--color-border)', margin: '0.5rem 0' }}></div>
+
+                            <button
+                                type="button"
+                                onClick={handleOpenUserList}
+                                className="btn"
+                                style={{
+                                    background: 'transparent',
+                                    border: '1px solid var(--color-border)',
+                                    color: 'var(--color-text-main)'
+                                }}
+                            >
+                                Login as Existing User...
+                            </button>
                         </div>
                     </div>
                 </form>
+
+                {/* User Selection Modal */}
+                {isUserListOpen && (
+                    <div style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        background: 'rgba(255,255,255,0.95)',
+                        backdropFilter: 'blur(4px)',
+                        borderRadius: 'var(--radius-lg)',
+                        zIndex: 10,
+                        padding: '1.5rem',
+                        display: 'flex',
+                        flexDirection: 'column'
+                    }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                            <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 600 }}>Select User</h3>
+                            <button
+                                onClick={() => setIsUserListOpen(false)}
+                                style={{ border: 'none', background: 'none', fontSize: '1.5rem', cursor: 'pointer', color: '#6b7280' }}
+                            >
+                                ×
+                            </button>
+                        </div>
+
+                        <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            {loadingUsers ? (
+                                <div style={{ textAlign: 'center', padding: '1rem', color: '#6b7280' }}>Loading users...</div>
+                            ) : users.length === 0 ? (
+                                <div style={{ textAlign: 'center', padding: '1rem', color: '#6b7280' }}>No users found.</div>
+                            ) : (
+                                users.map(user => (
+                                    <button
+                                        key={user.id}
+                                        onClick={() => handleSelectUser(user)}
+                                        style={{
+                                            border: '1px solid var(--color-border)',
+                                            background: '#fff',
+                                            padding: '10px',
+                                            borderRadius: '6px',
+                                            textAlign: 'left',
+                                            cursor: 'pointer',
+                                            display: 'flex',
+                                            justifyContent: 'space-between',
+                                            alignItems: 'center'
+                                        }}
+                                        className="user-select-btn"
+                                    >
+                                        <div>
+                                            <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{user.name}</div>
+                                            <div style={{ fontSize: '0.75rem', color: '#6b7280' }}>{user.email}</div>
+                                        </div>
+                                        <div style={{
+                                            fontSize: '0.7rem',
+                                            background: '#f3f4f6',
+                                            padding: '2px 6px',
+                                            borderRadius: '4px',
+                                            color: '#4b5563'
+                                        }}>
+                                            {user.roles?.includes('SuperUser') ? 'SuperUser' : user.roles?.includes('Admin') ? 'Admin' : 'User'}
+                                        </div>
+                                    </button>
+                                ))
+                            )}
+                        </div>
+                    </div>
+                )}
             </div>
+            <style>{`
+                .user-select-btn:hover {
+                    background-color: #f9fafb !important;
+                    border-color: #d1d5db !important;
+                }
+            `}</style>
         </div>
     );
 }

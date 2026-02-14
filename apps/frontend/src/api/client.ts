@@ -116,9 +116,9 @@ class ApiClient {
     private async handleError(response: Response) {
         try {
             const data = await response.json();
-            return new Error(data.message || data.error?.message || 'API Error');
+            return new Error(data.message || data.error?.message || `API Error ${response.status}`);
         } catch {
-            return new Error(`API Error: ${response.statusText}`);
+            return new Error(`API Error ${response.status}: ${response.statusText}`);
         }
     }
 }
